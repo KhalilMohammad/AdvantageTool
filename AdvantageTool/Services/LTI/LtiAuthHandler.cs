@@ -1,0 +1,3 @@
+﻿namespace AdvantageTool.Services.LTI
+{
+}
