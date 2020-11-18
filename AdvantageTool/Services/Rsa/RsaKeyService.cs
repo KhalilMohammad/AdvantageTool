@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using AdvantageTool.Services.Rsa.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using AdvantageTool.Services.Rsa.Models;
 
 namespace AdvantageTool.Services.Rsa
 {

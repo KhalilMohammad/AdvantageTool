@@ -49,9 +49,9 @@ namespace AdvantageTool
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddControllersWithViews();
 
-            var builder = services.AddIdentityServer()
+            services.AddIdentityServer()
                 .AddInMemoryIdentityResources(IdentityServerConfig.IdentityResources)
-                //.AddInMemoryApiResources(IdentityServerConfig.ApiScopes)
+                .AddInMemoryApiScopes(IdentityServerConfig.ApiScopes)
                 .AddInMemoryClients(IdentityServerConfig.Clients)
                 .AddSigningCredential(rsa.GetKey(), RsaSigningAlgorithm.RS256);
 
@@ -169,7 +169,8 @@ namespace AdvantageTool
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseDeveloperExceptionPage();
+                //app.UseExceptionHandler("/Home/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }

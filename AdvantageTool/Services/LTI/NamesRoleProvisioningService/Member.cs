@@ -1,5 +1,4 @@
 ﻿using AdvantageTool.Lti;
-using AdvantageTool.Services.LTI;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;

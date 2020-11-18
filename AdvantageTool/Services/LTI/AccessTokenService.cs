@@ -1,4 +1,6 @@
 ﻿using AdvantageTool.CustomClient;
+using AdvantageTool.Models;
+using AdvantageTool.Services.Rsa;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.IdentityModel.Tokens;
@@ -7,8 +9,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AdvantageTool.Models;
-using AdvantageTool.Services.Rsa;
 
 namespace AdvantageTool.Services.LTI
 {
