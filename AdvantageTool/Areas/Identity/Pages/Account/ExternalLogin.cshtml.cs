@@ -172,7 +172,7 @@ namespace AdvantageTool.Areas.Identity.Pages.Account
                         {
                             var properties = new AuthenticationProperties
                             {
-                                IsPersistent = false,
+                                IsPersistent = true,
                             };
                             properties.StoreTokens(info.AuthenticationTokens);
                             await _signInManager.SignInAsync(user, properties, info.LoginProvider);
