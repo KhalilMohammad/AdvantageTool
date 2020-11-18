@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AdvantageTool.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -6,12 +7,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using AdvantageTool.Models;
+using static AdvantageTool.Constants;
 
 namespace AdvantageTool.Areas.Identity.Pages.Account
 {
@@ -88,7 +93,6 @@ namespace AdvantageTool.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnGetCallbackAsync(string returnUrl = null, string remoteError = null)
         {
-            returnUrl = returnUrl ?? Url.Content("~/");
             if (remoteError != null)
             {
                 ErrorMessage = $"Error from external provider: {remoteError}";
@@ -117,13 +121,63 @@ namespace AdvantageTool.Areas.Identity.Pages.Account
                 // If the user does not have an account, then ask the user to create an account.
                 ReturnUrl = returnUrl;
                 ProviderDisplayName = info.ProviderDisplayName;
-                if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+
+                var idToken = info.AuthenticationTokens
+                    .Select(i => i.Value)
+                    .SingleOrDefault();
+                if (string.IsNullOrEmpty(idToken))
                 {
-                    Input = new InputModel
-                    {
-                        Email = info.Principal.FindFirstValue(ClaimTypes.Email)
-                    };
+                    return RedirectToPage("./Lockout");
                 }
+
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(idToken);
+
+                var user = new IdentityUser
+                {
+                    UserName = jwt.Subject
+                };
+
+                user.Email = jwt.Payload[JwtRegisteredClaimNames.Email].ToString();
+
+                var createResult = await _userManager.CreateAsync(user);
+
+                if (createResult.Succeeded)
+                {
+                    createResult = await _userManager.AddLoginAsync(user, info);
+
+                    if (createResult.Succeeded)
+                    {
+                        createResult = await _userManager.AddClaimsAsync(user, new List<Claim>
+                        {
+                            new Claim(JwtRegisteredClaimNames.Sub, jwt.Subject),
+                            new Claim(JwtRegisteredClaimNames.GivenName, jwt.Payload[JwtRegisteredClaimNames.GivenName].ToString()),
+                            new Claim(JwtRegisteredClaimNames.FamilyName, jwt.Payload[JwtRegisteredClaimNames.FamilyName].ToString()),
+                            new Claim("name", jwt.Payload["name"].ToString()),
+                            new Claim(LtiClaims.MessageType, jwt.Payload[LtiClaims.MessageType].ToString()),
+                            new Claim(LtiClaims.DeploymentId, jwt.Payload[LtiClaims.DeploymentId].ToString()),
+                            new Claim(LtiClaims.TargetLinkUri, jwt.Payload[LtiClaims.TargetLinkUri].ToString()),
+                            new Claim(LtiClaims.ResourceLink, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.ResourceLink])),
+                            new Claim(LtiClaims.Roles, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Roles])),
+                            new Claim(LtiClaims.Context, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Context])),
+                            new Claim(LtiClaims.Lis, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Lis])),
+                            new Claim(LtiClaims.LaunchPresentation, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.LaunchPresentation])),
+                            new Claim("http://www.brightspace.com", JsonConvert.SerializeObject(jwt.Payload["http://www.brightspace.com"])),
+                            new Claim(LtiClaims.Platform, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Platform])),
+                            new Claim(LtiClaims.Version, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Version])),
+                        });
+
+                        if (createResult.Succeeded)
+                        {
+                            await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+                            return LocalRedirect(returnUrl);
+                        }
+                    }
+                }
+
+                foreach (var error in createResult.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+
                 return Page();
             }
         }
