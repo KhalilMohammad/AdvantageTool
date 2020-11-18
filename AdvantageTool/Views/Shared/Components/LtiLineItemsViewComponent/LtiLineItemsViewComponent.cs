@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -29,12 +30,18 @@ namespace AdvantageTool.Views.Shared.Components.LtiLineItemsViewComponent
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<IViewComponentResult> InvokeAsync()
+        public async Task<IViewComponentResult> InvokeAsync(string idToken)
         {
-            var model = new LineItemsModel();
+            var model = new LineItemsModel(idToken);
+            if (idToken.IsMissing())
+            {
+                model.Status = $"{nameof(idToken)} is missing.";
+                return View(model);
+            }
 
-            var claims = HttpContext.User.Claims;
-            model.LtiRequest = new LtiResourceLinkRequest(claims);
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(idToken);
+            model.LtiRequest = new LtiResourceLinkRequest(token.Payload);
 
             if (model.LtiRequest.AssignmentGradeServices == null)
             {

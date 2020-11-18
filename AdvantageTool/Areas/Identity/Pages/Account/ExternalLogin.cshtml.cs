@@ -1,4 +1,5 @@
 ﻿using AdvantageTool.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -169,7 +170,12 @@ namespace AdvantageTool.Areas.Identity.Pages.Account
 
                         if (createResult.Succeeded)
                         {
-                            await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+                            var properties = new AuthenticationProperties
+                            {
+                                IsPersistent = false,
+                            };
+                            properties.StoreTokens(info.AuthenticationTokens);
+                            await _signInManager.SignInAsync(user, properties, info.LoginProvider);
                             return LocalRedirect(returnUrl);
                         }
                     }

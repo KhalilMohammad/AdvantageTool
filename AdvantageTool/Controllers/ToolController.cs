@@ -1,9 +1,10 @@
 ﻿using AdvantageTool.Lti;
 using AdvantageTool.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 
 namespace AdvantageTool.Controllers
@@ -20,21 +21,15 @@ namespace AdvantageTool.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
-            var claims = await _userManager.GetClaimsAsync(user);
+            var idToken = await HttpContext.GetTokenAsync("id_token");
 
-            //var options = new JsonSerializerOptions()
-            //{
-            //    MaxDepth = 0,
-            //    IgnoreNullValues = true,
-            //    IgnoreReadOnlyProperties = true
-            //};
-
-            //return Json(claims, options);
-
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(idToken);
             var response = new ToolResponseModel
             {
-                LtiRequest = new LtiResourceLinkRequest(claims),
+                LtiRequest = new LtiResourceLinkRequest(token.Payload),
+                IdToken = idToken,
+                JwtHeader = token.Header
             };
 
             return View(response);

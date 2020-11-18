@@ -1,5 +1,6 @@
 using AdvantageTool.Data;
 using AdvantageTool.Models;
+using AdvantageTool.Services.LTI;
 using AdvantageTool.Services.Rsa;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -157,6 +158,9 @@ namespace AdvantageTool
                 });
 
             services.AddSingleton(Configuration.GetSection("OpenIdConfig").Get<OidcModel>());
+
+            // Make AccessTokenService available for dependency injection.
+            services.AddTransient<AccessTokenService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
