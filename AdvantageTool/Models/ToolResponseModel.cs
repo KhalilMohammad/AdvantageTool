@@ -11,11 +11,6 @@ namespace AdvantageTool.Models
         public string Error { get; set; }
 
         /// <summary>
-        /// A copy of the id_token for diagnostic purposes.
-        /// </summary>
-        public string IdToken { get; set; }
-
-        /// <summary>
         /// The parsed JWT header from id_token. Null if invalid token.
         /// </summary>
         public JwtHeader JwtHeader { get; set; }
