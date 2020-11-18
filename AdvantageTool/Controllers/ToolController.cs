@@ -1,10 +1,9 @@
 ﻿using AdvantageTool.Lti;
 using AdvantageTool.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace AdvantageTool.Controllers
@@ -12,18 +11,30 @@ namespace AdvantageTool.Controllers
     [Authorize]
     public class ToolController : Controller
     {
+        private readonly UserManager<IdentityUser> _userManager;
+
+        public ToolController(UserManager<IdentityUser> userManager)
+        {
+            _userManager = userManager;
+        }
+
         public async Task<IActionResult> Index()
         {
-            var idToken = await HttpContext.GetTokenAsync(OpenIdConnectResponseType.IdToken);
+            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var claims = await _userManager.GetClaimsAsync(user);
 
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(idToken);
+            //var options = new JsonSerializerOptions()
+            //{
+            //    MaxDepth = 0,
+            //    IgnoreNullValues = true,
+            //    IgnoreReadOnlyProperties = true
+            //};
+
+            //return Json(claims, options);
 
             var response = new ToolResponseModel
             {
-                IdToken = idToken,
-                LtiRequest = new LtiResourceLinkRequest(jwt.Payload),
-                JwtHeader = jwt.Header,
+                LtiRequest = new LtiResourceLinkRequest(claims),
             };
 
             return View(response);
