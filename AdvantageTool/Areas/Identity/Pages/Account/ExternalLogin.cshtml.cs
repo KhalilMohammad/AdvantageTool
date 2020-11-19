@@ -111,6 +111,45 @@ namespace AdvantageTool.Areas.Identity.Pages.Account
             if (result.Succeeded)
             {
                 _logger.LogInformation("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity.Name, info.LoginProvider);
+
+                var idToken = info.AuthenticationTokens
+                    .Select(i => i.Value)
+                    .SingleOrDefault();
+
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(idToken);
+
+                var user = await _userManager.FindByNameAsync(jwt.Subject);
+                var createResult = await _userManager.AddClaimsAsync(user, new List<Claim>
+                    {
+                        new Claim(JwtRegisteredClaimNames.Sub, jwt.Subject),
+                        new Claim(JwtRegisteredClaimNames.GivenName, jwt.Payload[JwtRegisteredClaimNames.GivenName].ToString()),
+                        new Claim(JwtRegisteredClaimNames.FamilyName, jwt.Payload[JwtRegisteredClaimNames.FamilyName].ToString()),
+                        new Claim("name", jwt.Payload["name"].ToString()),
+                        new Claim(LtiClaims.MessageType, jwt.Payload[LtiClaims.MessageType].ToString()),
+                        new Claim(LtiClaims.DeploymentId, jwt.Payload[LtiClaims.DeploymentId].ToString()),
+                        new Claim(LtiClaims.TargetLinkUri, jwt.Payload[LtiClaims.TargetLinkUri].ToString()),
+                        new Claim(LtiClaims.ResourceLink, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.ResourceLink])),
+                        new Claim(LtiClaims.Roles, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Roles])),
+                        new Claim(LtiClaims.Context, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Context])),
+                        new Claim(LtiClaims.Lis, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Lis])),
+                        new Claim(LtiClaims.LaunchPresentation, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.LaunchPresentation])),
+                        new Claim("http://www.brightspace.com", JsonConvert.SerializeObject(jwt.Payload["http://www.brightspace.com"])),
+                        new Claim(LtiClaims.Platform, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Platform])),
+                        new Claim(LtiClaims.Version, JsonConvert.SerializeObject(jwt.Payload[LtiClaims.Version])),
+                    });
+
+                if (createResult.Succeeded)
+                {
+                    var properties = new AuthenticationProperties
+                    {
+                        IsPersistent = true,
+                    };
+                    properties.StoreTokens(info.AuthenticationTokens);
+                    await _signInManager.SignInAsync(user, properties, info.LoginProvider);
+                    return LocalRedirect(returnUrl);
+                }
+
                 return LocalRedirect(returnUrl);
             }
             if (result.IsLockedOut)
